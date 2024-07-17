@@ -5,7 +5,12 @@ extern competition Competition;
 
 // VEXcode devices
 extern drivetrain Drivetrain;
+
+extern motor ClawShaftMotor;
 extern motor ClawMotor;
+
+extern bumper ClawUpBumper;
+extern bumper ClawDownBumper;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

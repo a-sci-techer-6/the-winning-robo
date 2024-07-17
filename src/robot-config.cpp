@@ -10,11 +10,18 @@ brain  Brain;
 competition Competition;
 
 // VEXcode device constructors
-motor LeftDriveSmart = motor(PORT1, ratio18_1, false);
-motor RightDriveSmart = motor(PORT10, ratio18_1, true);
+motor LeftDriveSmart = motor(PORT20, ratio18_1, false);
+motor RightDriveSmart = motor(PORT11, ratio18_1, true);
 drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 319.19, 295, 40, mm, 1);
 
-motor ClawMotor = motor(PORT18, ratio18_1, false);
+motor ClawMotor = motor(PORT17, ratio18_1, true);
+
+motor ClawShaftMotor = motor(PORT18, ratio18_1, false);
+#define CLAW_GO_UP forward
+#define CLAW_GO_DOWN reverse
+
+bumper ClawUpBumper = bumper(Brain.ThreeWirePort.F);
+bumper ClawDownBumper = bumper(Brain.ThreeWirePort.E);
 
 // VEXcode generated functions
 
