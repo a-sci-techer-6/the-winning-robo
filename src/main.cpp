@@ -5,6 +5,8 @@ using namespace vex;
 using signature = vision::signature;
 using code = vision::code;
 
+#define SIDE_PLACED SIDE_RIGHT
+
 // A global instance of brain used for printing to the V5 Brain screen
 brain  Brain;
 competition Competition;
@@ -29,10 +31,10 @@ bumper ClawUpBumper = bumper(Brain.ThreeWirePort.F);
 bumper ClawDownBumper = bumper(Brain.ThreeWirePort.E);
 
 // FIXME: use correct ports
-bumper TLBumper = bumper(Brain.ThreeWirePort.A);
-bumper TRBumper = bumper(Brain.ThreeWirePort.B);
-bumper BLBumper = bumper(Brain.ThreeWirePort.C);
-bumper BRBumper = bumper(Brain.ThreeWirePort.D);
+bumper TLBumper = bumper(Brain.ThreeWirePort.H);
+bumper TRBumper = bumper(Brain.ThreeWirePort.G);
+bumper BLBumper = bumper(Brain.ThreeWirePort.B);
+bumper BRBumper = bumper(Brain.ThreeWirePort.A);
 
 #define V_PRINTF(...) Controller.Screen.print(__VA_ARGS__); \
                       Controller.Screen.newLine();
@@ -101,18 +103,38 @@ void autonomous(START_SIDE side) {
   motor same_motor = side == SIDE_LEFT ? LeftDriveSmart : RightDriveSmart;
 
   while(true) {
+    //if(!Competition.isAutonomous()) {
+    //  break;
+    //}
    switch(state) {
     case MOVE_OUT_START:
-      Drivetrain.spin(forward);
+      Drivetrain.drive(forward);
       if(TRBumper.pressing() || TLBumper.pressing()) {
         V_PRINTF("aligning mobile goal");
         state = ALIGN_MOBILE_GOAL;
       }
       break;
     case ALIGN_MOBILE_GOAL:
-      opp_motor.spin(forward, 100, percent); 
+      opp_motor.spin(forward, 70, percent); 
       // TODO: wait until we hit the wall--maybe light sensor?
       wait(2, sec);
+
+      Drivetrain.stop();
+
+      Drivetrain.drive(reverse);
+      opp_motor.spin(reverse, 70, percent);
+
+      wait(750, msec);
+
+      Drivetrain.drive(forward);
+      opp_motor.spin(forward, 60, percent);
+      
+      wait(1, sec);
+
+      Drivetrain.drive(forward);
+
+      waitUntil(TRBumper.pressing() || TLBumper.pressing());
+      Drivetrain.stop();
 
       V_PRINTF("collecting block");
 
@@ -122,7 +144,7 @@ void autonomous(START_SIDE side) {
       ClawShaftMotor.spin(CLAW_GO_DOWN);
 
       break;
-    case COLLECT_BLOCK_CLAW_DOWN:
+    case COLLECT_BLOCK:
       if(ClawDownBumper.pressing()) {
         state = MOVE_TO_LOW_GOAL;
 
@@ -134,8 +156,8 @@ void autonomous(START_SIDE side) {
       }
       break;
     case MOVE_TO_LOW_GOAL:
-      opp_motor.spin(reverse, 100, percent);
-      break;
+      //opp_motor.spin(reverse, 100, percent);
+      //break;
     case STOP:
       Drivetrain.stop();
       ClawShaftMotor.stop();
@@ -159,9 +181,11 @@ int main()
   RightDriveSmart.setVelocity(50, percent);
   LeftDriveSmart.setVelocity(50, percent);
 
-  ClawUpBumper.pressed(ClawShaftMotor.stop);
-  ClawDownMotor.pressed(ClawShaftMotor.stop);
+  ClawUpBumper.pressed([]{ ClawShaftMotor.stop(); });
+  ClawDownBumper.pressed([]{ ClawShaftMotor.stop(); });
 
-  Competition.autonomous(autonomous);
+  autonomous(SIDE_LEFT);
+
+  Competition.autonomous([]{ autonomous(SIDE_PLACED); });
   Competition.drivercontrol(driver_control);
 }
