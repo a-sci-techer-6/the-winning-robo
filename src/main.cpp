@@ -28,6 +28,12 @@ motor ClawShaftMotor = motor(PORT18, ratio18_1, false);
 bumper ClawUpBumper = bumper(Brain.ThreeWirePort.F);
 bumper ClawDownBumper = bumper(Brain.ThreeWirePort.E);
 
+// FIXME: use correct ports
+bumper TLBumper = bumper(Brain.ThreeWirePort.A);
+bumper TRBumper = bumper(Brain.ThreeWirePort.B);
+bumper BLBumper = bumper(Brain.ThreeWirePort.C);
+bumper BRBumper = bumper(Brain.ThreeWirePort.D);
+
 #define V_PRINTF(...) Controller.Screen.print(__VA_ARGS__); \
                       Controller.Screen.newLine();
 
@@ -75,25 +81,60 @@ void driver_control() {
   }
 }
 
+typedef enum START_SIDE {
+  SIDE_LEFT,
+  SIDE_RIGHT,
+} START_SIDE;
+
 typedef enum A_STATE {
   MOVE_OUT_START,
   ALIGN_MOBILE_GOAL,
   COLLECT_BLOCK,
-  SCORE_LOW_GOAL,
+  MOVE_TO_LOW_GOAL,
   STOP,
 } A_STATE;
 
-void autonomous() {
+void autonomous(START_SIDE side) {
   A_STATE state = MOVE_OUT_START;
+
+  motor opp_motor = side == SIDE_LEFT ? RightDriveSmart : LeftDriveSmart;
+  motor same_motor = side == SIDE_LEFT ? LeftDriveSmart : RightDriveSmart;
+
   while(true) {
    switch(state) {
     case MOVE_OUT_START:
+      Drivetrain.spin(forward);
+      if(TRBumper.pressing() || TLBumper.pressing()) {
+        V_PRINTF("aligning mobile goal");
+        state = ALIGN_MOBILE_GOAL;
+      }
       break;
     case ALIGN_MOBILE_GOAL:
+      opp_motor.spin(forward, 100, percent); 
+      // TODO: wait until we hit the wall--maybe light sensor?
+      wait(2, sec);
+
+      V_PRINTF("collecting block");
+
+      state = COLLECT_BLOCK;
+
+      ClawMotor.spin(CLAW_OPEN);
+      ClawShaftMotor.spin(CLAW_GO_DOWN);
+
       break;
-    case COLLECT_BLOCK:
+    case COLLECT_BLOCK_CLAW_DOWN:
+      if(ClawDownBumper.pressing()) {
+        state = MOVE_TO_LOW_GOAL;
+
+        ClawMotor.spin(CLAW_CLOSE);
+        wait(750, msec);
+        ClawShaftMotor.spin(CLAW_GO_UP);
+
+        V_PRINTF("moving to low goal");
+      }
       break;
-    case SCORE_LOW_GOAL:
+    case MOVE_TO_LOW_GOAL:
+      opp_motor.spin(reverse, 100, percent);
       break;
     case STOP:
       Drivetrain.stop();
@@ -104,7 +145,7 @@ void autonomous() {
       state = STOP;
    } 
 
-    wait(5, msec);
+   wait(5, msec);
   }
 }
 
@@ -114,6 +155,12 @@ int main()
 
   ClawShaftMotor.setStopping(brake);
   ClawShaftMotor.setVelocity(100, percent);
+
+  RightDriveSmart.setVelocity(50, percent);
+  LeftDriveSmart.setVelocity(50, percent);
+
+  ClawUpBumper.pressed(ClawShaftMotor.stop);
+  ClawDownMotor.pressed(ClawShaftMotor.stop);
 
   Competition.autonomous(autonomous);
   Competition.drivercontrol(driver_control);
