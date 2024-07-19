@@ -5,7 +5,7 @@ using namespace vex;
 using signature = vision::signature;
 using code = vision::code;
 
-#define SIDE_PLACED SIDE_RIGHT
+#define SIDE_PLACED SIDE_LEFT
 
 // A global instance of brain used for printing to the V5 Brain screen
 brain  Brain;
@@ -35,7 +35,7 @@ bumper TRBumper = bumper(Brain.ThreeWirePort.G);
 bumper BLBumper = bumper(Brain.ThreeWirePort.B);
 bumper BRBumper = bumper(Brain.ThreeWirePort.A);
 
-#define V_PRINTF(...) Controller.Screen.clearLine() \
+#define V_PRINTF(...) Controller.Screen.clearLine(); \
                       Controller.Screen.print(__VA_ARGS__);
 
 void toggle_claw() {
@@ -100,9 +100,9 @@ void autonomous(START_SIDE side) {
   motor same_motor = side == SIDE_LEFT ? LeftDriveSmart : RightDriveSmart;
 
   while(true) {
-    //if(!Competition.isAutonomous()) {
-    //  break;
-    //}
+    if(!Competition.isAutonomous()) {
+     break;
+    }
    switch(state) {
     case MOVE_OUT_START:
       Drivetrain.drive(forward);
@@ -112,14 +112,14 @@ void autonomous(START_SIDE side) {
       }
       break;
     case ALIGN_MOBILE_GOAL:
-      opp_motor.spin(forward, 70, percent); 
+      opp_motor.spin(forward, 75, percent); 
       // TODO: wait until we hit the wall--maybe light sensor?
       wait(2, sec);
 
       Drivetrain.stop();
 
       Drivetrain.drive(reverse);
-      opp_motor.spin(reverse, 70, percent);
+      opp_motor.spin(reverse, 73, percent);
 
       wait(750, msec);
 
@@ -175,11 +175,6 @@ int main()
 
   RightDriveSmart.setVelocity(50, percent);
   LeftDriveSmart.setVelocity(50, percent);
-
-  ClawUpBumper.pressed([]{ ClawShaftMotor.stop(); });
-  ClawDownBumper.pressed([]{ ClawShaftMotor.stop(); });
-
-  autonomous(SIDE_LEFT);
 
   Competition.autonomous([]{ autonomous(SIDE_PLACED); });
   Competition.drivercontrol(driver_control);
