@@ -30,15 +30,13 @@ motor ClawShaftMotor = motor(PORT18, ratio18_1, false);
 bumper ClawUpBumper = bumper(Brain.ThreeWirePort.F);
 bumper ClawDownBumper = bumper(Brain.ThreeWirePort.E);
 
-// FIXME: use correct ports
 bumper TLBumper = bumper(Brain.ThreeWirePort.H);
 bumper TRBumper = bumper(Brain.ThreeWirePort.G);
 bumper BLBumper = bumper(Brain.ThreeWirePort.B);
 bumper BRBumper = bumper(Brain.ThreeWirePort.A);
 
-#define V_PRINTF(...) Controller.Screen.print(__VA_ARGS__); \
-                      Controller.Screen.newLine();
-
+#define V_PRINTF(...) Controller.Screen.clearLine() \
+                      Controller.Screen.print(__VA_ARGS__);
 
 void toggle_claw() {
   V_PRINTF("toggling claw (ClawClosed = %d)", ClawClosed);
@@ -92,7 +90,6 @@ typedef enum A_STATE {
   MOVE_OUT_START,
   ALIGN_MOBILE_GOAL,
   COLLECT_BLOCK,
-  MOVE_TO_LOW_GOAL,
   STOP,
 } A_STATE;
 
@@ -146,7 +143,7 @@ void autonomous(START_SIDE side) {
       break;
     case COLLECT_BLOCK:
       if(ClawDownBumper.pressing()) {
-        state = MOVE_TO_LOW_GOAL;
+        state = STOP;
 
         ClawMotor.spin(CLAW_CLOSE);
         wait(750, msec);
@@ -155,15 +152,13 @@ void autonomous(START_SIDE side) {
         V_PRINTF("moving to low goal");
       }
       break;
-    case MOVE_TO_LOW_GOAL:
-      //opp_motor.spin(reverse, 100, percent);
-      //break;
+     
     case STOP:
+      
+    default:
       Drivetrain.stop();
       ClawShaftMotor.stop();
       ClawMotor.stop();
-      break;
-    default:
       state = STOP;
    } 
 
@@ -173,7 +168,7 @@ void autonomous(START_SIDE side) {
 
 int main()
 {
-  V_PRINTF("started\n");
+  V_PRINTF("started");
 
   ClawShaftMotor.setStopping(brake);
   ClawShaftMotor.setVelocity(100, percent);
